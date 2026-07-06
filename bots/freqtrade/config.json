@@ -1,0 +1,84 @@
+{
+    "max_open_trades": 10,
+    "stake_currency": "USDT",
+    "stake_amount": 50,
+    "tradable_balance_ratio": 0.95,
+    "fiat_display_currency": "USD",
+
+    "dry_run": true,
+    "dry_run_wallet": 1000,
+    "cancel_open_orders_on_exit": false,
+
+    "trading_mode": "spot",
+
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 30,
+        "unit": "minutes"
+    },
+    "entry_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    "exit_pricing": {
+        "price_side": "same",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+
+    "exchange": {
+        "name": "bybit",
+        "key": "${BYBIT_API_KEY}",
+        "secret": "${BYBIT_API_SECRET}",
+        "ccxt_config": {
+            "enableRateLimit": true
+        },
+        "ccxt_async_config": {
+            "enableRateLimit": true,
+            "rateLimit": 200
+        }
+    },
+
+    "pairlists": [
+        {
+            "method": "VolumePairList",
+            "number_assets": 40,
+            "sort_key": "quoteVolume",
+            "refresh_period": 1800
+        },
+        {"method": "AgeFilter", "min_days_listed": 30},
+        {"method": "PrecisionFilter"},
+        {"method": "PriceFilter", "low_price_ratio": 0.01},
+        {"method": "SpreadFilter", "max_spread_ratio": 0.005},
+        {
+            "method": "RangeStabilityFilter",
+            "lookback_days": 3,
+            "min_rate_of_change": 0.05,
+            "refresh_period": 1440
+        }
+    ],
+
+    "telegram": {
+        "enabled": false,
+        "token": "disabled",
+        "chat_id": "0"
+    },
+    "api_server": {
+        "enabled": false,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 8099,
+        "username": "freqtrade",
+        "password": "freqtrade",
+        "jwt_secret_key": "somethingRandomSomethingRandom123freqtrade"
+    },
+
+    "bot_name": "freqtrade-nfi",
+    "initial_state": "running",
+    "force_entry_enable": false,
+
+    "internals": {
+        "process_throttle_secs": 5,
+        "heartbeat_interval": 60
+    }
+}

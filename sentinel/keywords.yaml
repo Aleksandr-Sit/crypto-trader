@@ -1,0 +1,87 @@
+# ============================================================
+# Ключевые слова для мониторинга угроз
+# Уровни: 1 = наблюдение, 2 = тревога, 3 = экстренный вывод
+# ============================================================
+
+level_1:
+  description: "Наблюдение — только уведомление в Telegram"
+  en:
+    - "Russia sanctions"
+    - "Russian crypto"
+    - "crypto restrict Russia"
+    - "Russia compliance"
+    - "Rosfinmonitoring"
+    - "CBR crypto"
+    - "Russian users limit"
+  ru:
+    - "Россия криптобиржа"
+    - "крипто ограничения РФ"
+    - "ЦБ криптовалюта"
+    - "Росфинмониторинг"
+    - "Минфин криптовалюта"
+
+level_2:
+  description: "Тревога — снизить позиции 50%, вывести 30% USDT"
+  en:
+    - "suspend Russian users"
+    - "exit Russia"
+    - "ban Russian accounts"
+    - "block Russian"
+    - "Russian users suspended"
+    - "cease operations Russia"
+    - "Bybit Russia ban"
+    - "OKX Russia ban"
+    - "MEXC Russia ban"
+    - "OFAC crypto exchange"
+    - "sanctions crypto platform"
+  ru:
+    - "прекращение обслуживания"
+    - "российские пользователи заблок"
+    - "блокировка россиян"
+    - "прекращение работы в России"
+    - "ограничение доступа граждан РФ"
+
+# Для level_2 триггер срабатывает только если новость из официального источника
+# или упоминается конкретная биржа (Bybit/OKX/MEXC) + "Russia"
+exchange_names:
+  - "Bybit"
+  - "OKX"
+  - "MEXC"
+  - "Gate.io"
+
+level_3:
+  description: "Экстренный вывод — закрыть ВСЁ и вывести на холодный кошелёк"
+  en:
+    - "effective immediately Russian accounts"
+    - "freeze Russian accounts"
+    - "OFAC designation exchange"
+    - "sanctions designation Bybit"
+    - "sanctions designation OKX"
+    - "block all Russian"
+    - "immediately suspend Russia"
+  ru:
+    - "немедленное прекращение"
+    - "заморозка счетов граждан РФ"
+    - "блокировка всех российских"
+    - "срочная блокировка"
+
+# Источники новостей (RSS)
+rss_feeds:
+  - url: "https://cointelegraph.com/rss"
+    name: "CoinTelegraph"
+    weight: 2
+  - url: "https://www.coindesk.com/arc/outboundfeeds/rss"
+    name: "CoinDesk"
+    weight: 2
+  - url: "https://decrypt.co/feed"
+    name: "Decrypt"
+    weight: 1
+  - url: "http://bitcoinmagazine.com/feed"
+    name: "Bitcoin Magazine"
+    weight: 1
+
+# Официальные Telegram-каналы бирж (только мониторинг заголовков)
+telegram_channels:
+  - "@Bybit_Official"
+  - "@okx_official"
+  - "@MEXCGlobal"

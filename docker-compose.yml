@@ -1,0 +1,77 @@
+# ============================================================
+# Запуск: docker compose up -d
+# Остановка: docker compose down
+# Логи: docker compose logs -f bot
+# ============================================================
+
+services:
+
+  # ------------------------------------------------------------
+  # Redis — хранилище состояния (переживает рестарты)
+  # ------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass "${REDIS_PASSWORD:-changeme}"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ------------------------------------------------------------
+  # Основной бот (Grid + Funding Arb + Scalper + Sentinel)
+  # ------------------------------------------------------------
+  bot:
+    build: .
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config.yaml:/app/config.yaml:ro
+    ports:
+      - "8080:8080"    # Health-check endpoint для watchdog на Senko
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ------------------------------------------------------------
+  # Freqtrade — NostalgiaForInfinity X7
+  # Запуск: docker compose --profile freqtrade up -d
+  # ------------------------------------------------------------
+  freqtrade:
+    image: freqtradeorg/freqtrade:stable
+    profiles: ["freqtrade"]
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - ./bots/freqtrade/user_data:/freqtrade/user_data
+      - ./bots/freqtrade/config.json:/freqtrade/config.json:ro
+    command: >
+      trade
+      --config /freqtrade/config.json
+      --strategy NostalgiaForInfinityX7
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+volumes:
+  redis_data:
+    driver: local

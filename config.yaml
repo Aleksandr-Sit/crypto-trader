@@ -1,0 +1,232 @@
+# ============================================================
+# Конфигурация стратегий и ботов
+# Секреты (ключи, пароли) — только в .env, не здесь!
+# ============================================================
+
+system:
+  health_port: 8080          # Порт для watchdog health-check
+  log_level: INFO
+  timezone: UTC
+
+# ------------------------------------------------------------
+# Grid Bot (Стратегия 1)
+# ------------------------------------------------------------
+grid_bot:
+  enabled: true
+  symbol: "BTCUSDT"
+  exchange: "bybit"
+  capital_usdt: 500          # Явный капитал (не 60% баланса)
+  grid_count: 30             # Количество уровней сетки (снижено с 40 — меньше inventory exposure)
+  range_pct: 20.0            # Диапазон сетки ±20% от текущей цены (снижено с 25)
+  # Regime-фильтр (07_SPRINT_VALIDATION): пауза сетки с продажей инвентаря в
+  # подтверждённом down-тренде. Эффект на истории: убыток 2022 −68%, DD −77%→−30%
+  regime_filter:
+    enabled: true
+    donchian_days: 20        # OFF при close < min(low 20д); ON при close > max(high 20д)
+  order_type: "limit"        # Maker-ордера (получаем rebate)
+  # Стоп: если цена уходит ниже нижней границы сетки
+  hard_stop_below_range: true
+  rebalance_interval_h: 24   # Пересчитывать диапазон каждые 24ч
+  # Bybit spot PostOnly maker fee: -0.01% (rebate ×2 = +0.02% на round trip).
+  # Отрицательное значение = мы ЗАРАБАТЫВАЕМ на комиссиях.
+  fee_pct: -0.0002
+
+# ------------------------------------------------------------
+# Funding Rate Arbitrage (Стратегия 2)
+# ------------------------------------------------------------
+funding_arb:
+  enabled: true
+  exchange: "bybit"
+  # Символы для сканирования (перп + спот на Bybit).
+  # Мид-капы добавлены 06.07.2026 по 12_CARRY_WATCHLIST_SPEC: carry-пул живёт
+  # в режимных окнах мид-капов (скан 2024–26); спреды спота 0.01–0.10%, все
+  # исторические эпизоды нетто-положительны @0.31% RT. У ONDO/STRK/TAC funding
+  # каждые 4h — интервал и лоты бот берёт из метаданных инструмента.
+  symbols:
+    - "BTCUSDT"
+    - "ETHUSDT"
+    - "NEARUSDT"
+    - "SUIUSDT"
+    - "ADAUSDT"
+    - "LTCUSDT"
+    - "LINKUSDT"
+    - "XLMUSDT"
+    - "WLDUSDT"
+    - "ONDOUSDT"
+    - "STRKUSDT"
+    - "TACUSDT"
+  capital_usdt: 200            # USDT на одну позицию
+  max_positions: 1             # Максимум одновременных позиций (снижено с 2 — ADL-exposure)
+  # 4 market orders: spot in 0.10% + perp in 0.055% + spot out 0.10% + perp out 0.055% = 0.31%
+  fee_pct: 0.0031
+  # Пороги входа/выхода — в 8h-ЭКВИВАЛЕНТЕ ставки (для 4h-пар бот нормализует:
+  # r8 = rate × 8h/interval), см. 12_CARRY_WATCHLIST_SPEC §3
+  entry_rate_threshold: 0.0003 # 0.03% per 8h ≈ 13% APR — входим
+  exit_rate_threshold: 0.0001  # 0.01% per 8h ≈ 4% APR — выходим
+  negative_rate_exit_periods: 2  # Выход если rate < 0 два периода подряд
+  stop_loss_pct: 2.0           # Стоп если unrealized PnL < -2% (live only)
+  # ADL-защита перп позиции
+  adl_reduce_threshold: 4      # При ранке 4 — снизить позицию на 50%
+  adl_close_threshold: 5       # При ранке 5 — полностью закрыть
+
+# ------------------------------------------------------------
+# NostalgiaForInfinity (Стратегия 3) — через Freqtrade Docker
+# ------------------------------------------------------------
+nfi_bot:
+  enabled: false
+  # Freqtrade запускается отдельным контейнером
+  # Управляется через bots/freqtrade/config.json
+  pairs_count: 40            # Количество торгуемых пар
+  max_open_trades: 10
+  stake_currency: "USDT"
+
+# ------------------------------------------------------------
+# BB Squeeze + VWAP Scalper (Стратегия 4)
+# ------------------------------------------------------------
+scalper:
+  enabled: false   # ОТКЛЮЧЁН 05.07.2026 (02_VALIDATION_REPORT.md §4.1): сигнал мёртв —
+                   # ta.bollinger_wband возвращает ПРОЦЕНТЫ, порог 0.05 сравнивается как
+                   # доля → squeeze не срабатывает никогда (0 сделок за 9 дней paper).
+                   # Включать только после фикса юнитов + собственного бэктеста.
+  symbols:
+    - "BTCUSDT"
+    - "ETHUSDT"
+    - "SOLUSDT"
+  exchange: "bybit"
+  capital_usdt: 100            # USDT на одну сделку (снижено с 200 под $1k депозит)
+  # BB Squeeze (4H)
+  bb_period: 20
+  bb_std: 2.0
+  squeeze_threshold: 0.05    # BandWidth < 5% = squeeze
+  # VWAP вход (1m)
+  vwap_deviation_pct: 0.5    # Вход если цена ниже VWAP на 0.5%
+  rsi_period: 7
+  rsi_oversold: 35
+  # Управление сделкой
+  take_profit_pct: 0.80      # TP: +0.80% (фикс: net R:R 1.07 → 2.45)
+  stop_loss_pct: 0.20        # SL: -0.20%
+  max_trade_duration_min: 15 # Принудительный выход через 15 минут
+  # Нерабочее время (низкий объём, UTC)
+  quiet_hours_start: 1       # 01:00 UTC
+  quiet_hours_end: 5         # 05:00 UTC
+  order_type: "limit"        # Maker-only для получения rebate
+  # Консервативная оценка: entry maker -0.01% + exit taker 0.10% = 0.09% net
+  fee_pct: 0.0009
+
+# ------------------------------------------------------------
+# TSM Trend-Following (спринт 07/2026: 07_SPRINT_VALIDATION, 08_SPRINT_SPECS)
+# Donchian 55/20 long/short на дневках. Закрывает медвежью дыру портфеля
+# (corr с Grid в 2022 = −0.79). Сайзинг R=$5 зафиксирован портфельным MC.
+# ------------------------------------------------------------
+tsm_bot:
+  enabled: true
+  exchange: "bybit"
+  symbols:
+    - "BTCUSDT"
+    - "ETHUSDT"
+  capital_usdt: 200          # слот (кап нотионала 1× на символ)
+  risk_per_trade_usd: 5.0    # фикс. риск на сделку (НЕ увеличивать без пересчёта MC)
+  entry_period: 55           # Donchian вход (плато валидировано на 16–55)
+  exit_period: 20            # Donchian выход
+  atr_period: 14
+  atr_stop_mult: 2.0         # exchange-level SL = 2×ATR(1D)
+  leverage: 1
+  fee_pct: 0.0011            # taker round-trip
+
+# ------------------------------------------------------------
+# Реинвестирование (сложный процент)
+# ------------------------------------------------------------
+redistributor:
+  enabled: true
+  run_at_utc: "00:00"        # Время ежедневного реинвестирования
+  min_profit_usd: 5.0        # Минимальная прибыль для распределения
+  allocation:
+    grid_bot: 0.50           # 50% прибыли скальпера → grid
+    funding_arb: 0.30        # 30% → arb
+    nfi_bot: 0.20            # 20% → NFI
+
+# ------------------------------------------------------------
+# News Sentinel
+# ------------------------------------------------------------
+sentinel:
+  enabled: true
+  check_interval_min: 15     # Проверка каждые 15 минут
+  level2_withdraw_pct: 0.30  # Уровень 2: вывести 30% USDT
+  level2_reduce_pct: 0.50    # Уровень 2: снизить позиции на 50%
+  # Сеть вывода выбирается автоматически по минимальной комиссии (WithdrawalRouter).
+  # Задай адреса в .env: WITHDRAWAL_ADDRESS_USDT_ARB / OP / TRC20 / ERC20
+
+# ------------------------------------------------------------
+# Breakout Momentum Bot (Стратегия 5) — агрессивный рост
+# ------------------------------------------------------------
+breakout_bot:
+  enabled: false   # ОТКЛЮЧЁН 05.07.2026 — стратегия отклонена бэктестом
+                   # (02_VALIDATION_REPORT.md §1): PF 0.70, expectancy −$1.03/сделку,
+                   # все 27 комбинаций параметров в минусе, плато отсутствует.
+                   # Плюс P0-баги: юниты wband (§4.1) и переразмер позиции (§4.2).
+  symbols:
+    - "BTCUSDT"
+    - "ETHUSDT"
+  exchange: "bybit"
+  capital_usdt: 300           # Капитал для расчёта риска (было 200 — недостаточно для 2 concurrent margin)
+  leverage: 3                 # Плечо на perp (снижено с 5 — altcoin wick/ADL риск)
+  risk_per_trade_pct: 1.5     # % капитала под риском на сделку (SL)
+  rr_min: 2.5                 # Минимальное R:R (иначе не входим)
+  max_concurrent: 2           # Не более 2 сделок одновременно (снижено с 3)
+  # Сигнал консолидации (1H)
+  bb_period: 20
+  squeeze_threshold: 0.05     # BB BandWidth < 5% = сжатие
+  # Подтверждение пробоя (15m)
+  volume_multiplier: 2.5      # Объём > 2.5× среднего
+  # Размер TP/SL через ATR(1H)
+  atr_sl_mult: 1.0            # SL = entry ± 1.0 × ATR
+  atr_tp_mult: 2.5            # TP = entry ± 2.5 × ATR → R:R 2.5:1
+  # Тайм-менеджмент
+  max_trade_duration_h: 4     # Принудительный выход через 4 часа
+  cooldown_after_exit_h: 2    # Пауза после закрытия сделки
+  quiet_hours_start: 1        # Без торговли 01:00–05:00 UTC
+  quiet_hours_end: 5
+  # 2 perp market orders × Bybit taker 0.055% = 0.11%
+  fee_pct: 0.0011
+
+# ------------------------------------------------------------
+# Statistical Arbitrage Bot (Стратегия 6) — ETH/BTC pairs
+# ------------------------------------------------------------
+stat_arb:
+  enabled: false              # Отключён при депозите < $3000 — превышает допустимый риск капитала
+  exchange: "bybit"
+  pair_a: "ETHUSDT"           # Пара A (ETH)
+  pair_b: "BTCUSDT"           # Пара B (BTC) — исторически коинтегрированы
+  capital_per_leg: 150        # USDT маржи на ногу (снижено с 400; включать при депозите >= $3000)
+  leverage: 3                 # Небольшое плечо — держим часами
+  lookback_periods: 168       # Окно Z-score: 168×1H = 1 неделя (было 20 часов — слишком мало)
+  entry_zscore: 2.0           # Вход при отклонении ≥ 2σ
+  exit_zscore: 0.3            # Выход при возврате к среднему
+  stop_zscore: 3.5            # Стоп если Z ушёл дальше (модель ошиблась)
+  max_hold_hours: 48          # Принудительный выход через 48 часов
+  # 4 perp market orders (entry+exit ×2 ноги) × Bybit taker 0.055%
+  # Реальная комиссия: 4 × 0.055% × (150×3) = ~$1.0 на сделку
+  fee_pct: 0.0011             # Скорректировано: было 0.0022 (завышало в 2×)
+
+# ------------------------------------------------------------
+# Ежедневный анализ и советник по параметрам
+# ------------------------------------------------------------
+analyzer:
+  enabled: true
+  report_time_utc: "06:00"   # Время отчёта (UTC) = 10:00 по Самаре (UTC+4)
+
+# ------------------------------------------------------------
+# Риск-менеджмент (глобальный)
+# ------------------------------------------------------------
+risk:
+  max_portfolio_drawdown_pct: 12.0   # STOP если портфель просел > 12%
+  crash_drop_pct: 5.0                # STOP если BTC упал > 5% за 5 минут
+  crash_window_sec: 300
+  price_monitor_interval_sec: 30     # Интервал опроса цены для crash detector
+  drawdown_check_interval_sec: 300   # Интервал проверки просадки портфеля (Уровень 2)
+  # Максимальная доля каждого бота от портфеля
+  max_allocation:
+    grid_bot: 0.60
+    funding_arb: 0.40
+    nfi_bot: 0.25
+    scalper: 0.15

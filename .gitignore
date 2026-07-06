@@ -1,0 +1,45 @@
+# ============================================================
+# SECRETS — НИКОГДА не коммитить эти файлы
+# ============================================================
+.env
+.env.local
+.env.production
+*.key
+*.pem
+secrets/
+vault/
+
+# Данные и логи
+data/*.db
+data/*.sqlite
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+.Python
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+
+# Freqtrade
+bots/freqtrade/user_data/backtest_results/
+bots/freqtrade/user_data/logs/
+bots/freqtrade/user_data/tradesv3.sqlite
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

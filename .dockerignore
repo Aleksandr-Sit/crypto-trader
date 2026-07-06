@@ -1,0 +1,12 @@
+.env
+.env.*
+logs/
+data/
+.mypy_cache/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+AUDIT_REPORT.md
+GO_LIVE_CHECKLIST.md
