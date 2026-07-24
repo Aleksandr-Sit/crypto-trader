@@ -1,5 +1,12 @@
 # crypto-trader
 
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-state-DC382D?logo=redis&logoColor=white)
+![Exchanges](https://img.shields.io/badge/Bybit%20%7C%20MEXC%20%7C%20OKX-ccxt%20%7C%20pybit-F7931A)
+![status](https://img.shields.io/badge/status-paper--mode-orange)
+![last commit](https://img.shields.io/github/last-commit/Aleksandr-Sit/crypto-trader)
+
 Мультибиржевая система автоматической торговли: несколько независимых торговых
 ботов на общей архитектуре, работают 24/7 в Docker с персистентным состоянием в
 Redis и аварийными защитами. Проект построен end-to-end через **Claude Code** как
