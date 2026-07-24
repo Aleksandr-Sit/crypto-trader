@@ -43,3 +43,4 @@ bots/freqtrade/user_data/tradesv3.sqlite
 # OS
 .DS_Store
 Thumbs.db
+research/
