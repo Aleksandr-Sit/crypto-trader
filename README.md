@@ -1,5 +1,6 @@
 # crypto-trader
 
+[![CI](https://github.com/Aleksandr-Sit/crypto-trader/actions/workflows/ci.yml/badge.svg)](https://github.com/Aleksandr-Sit/crypto-trader/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![Redis](https://img.shields.io/badge/Redis-state-DC382D?logo=redis&logoColor=white)
