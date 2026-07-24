@@ -27,14 +27,20 @@ Redis и аварийными защитами. Проект построен en
 
 ## Архитектура
 
-```
-docker-compose:
-  redis        — состояние ботов (персистентно между рестартами)
-  bot          — все торговые боты + Telegram-уведомления + health-эндпоинт
-  freqtrade    — отдельный движок (NostalgiaForInfinity, dry-run)
-
-Watchdog (Dead Man's Switch) на отдельном VPS:
-  пингует health-эндпоинт; при потере связи >N сек — аварийно закрывает позиции
+```mermaid
+flowchart LR
+    subgraph host["VPS · Hostkey (docker-compose)"]
+        bots["bot container<br/>8 ботов: Grid · TSM · Funding Arb · …"]
+        redis[("Redis<br/>state")]
+        health["health :8080"]
+        ft["Freqtrade<br/>dry-run"]
+        bots --- redis
+        bots --- health
+    end
+    watchdog["Dead Man's Switch<br/>(отдельный VPS)"] -->|ping| health
+    watchdog -.->|нет связи N сек →<br/>закрыть позиции| bots
+    bots -->|ордера| ex["Bybit · MEXC · OKX"]
+    bots -->|алерты / команды| tg["Telegram"]
 ```
 
 - **`bots/base.py`** — `BaseBot`: единый жизненный цикл (tick-loop, счётчик ошибок,
